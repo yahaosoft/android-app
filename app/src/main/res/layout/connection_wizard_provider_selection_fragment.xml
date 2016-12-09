@@ -26,6 +26,12 @@
                 android:textColor="?android:attr/textColorPrimary"
                 android:text="@string/connectionWizard_providerSelection_titleMessage"/>
 
+            <Button
+                android:id="@+id/scanQrCodeButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Scan QR code" />
+
             <RadioGroup
                 android:id="@+id/providerRadioGroup"
                 android:layout_width="wrap_content"

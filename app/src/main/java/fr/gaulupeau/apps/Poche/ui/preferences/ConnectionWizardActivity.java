@@ -1,8 +1,10 @@
 package fr.gaulupeau.apps.Poche.ui.preferences;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -33,6 +35,8 @@ public class ConnectionWizardActivity extends AppCompatActivity {
     public static final String EXTRA_SHOW_SUMMARY = "show_summary";
 
     private static final String TAG = "ConnectionWizard";
+
+    private static final int REQUEST_CODE_QR_CODE = 1;
 
     private static final String DATA_PROVIDER = "provider";
     private static final String DATA_URL = "url";
@@ -118,6 +122,32 @@ public class ConnectionWizardActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == REQUEST_CODE_QR_CODE) {
+            if(resultCode == RESULT_OK) {
+                String resultString = data.getStringExtra("SCAN_RESULT");
+                Log.d(TAG, "onActivityResult() got string: " + resultString);
+
+                if(resultString == null) return;
+
+                Uri uri = Uri.parse(resultString);
+                if(!"wallabag".equals(uri.getScheme())) {
+                    Log.i(TAG, "onActivityResult() unrecognized URI scheme: " + uri.getScheme());
+                    Toast.makeText(this, "Unrecognized URI scheme", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Intent intent = getIntent();
+                intent.setData(uri);
+                startActivity(intent);
+                finish();
+            }
+        }
+    }
+
     private ConnectionData parseLoginData(String connectionUri) {
         // wallabag://user@server.tld
         String prefix = "wallabag://";
@@ -137,6 +167,25 @@ public class ConnectionWizardActivity extends AppCompatActivity {
         }
 
         return new ConnectionData(values[0], values[1]);
+    }
+
+    public void scanQrCode() {
+        try {
+            Intent intent = new Intent("com.google.zxing.client.android.SCAN");
+            intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+
+            startActivityForResult(intent, REQUEST_CODE_QR_CODE);
+        } catch(ActivityNotFoundException e) {
+            Log.i(TAG, "scanQrCode() exception", e);
+
+            Toast.makeText(this, "Please install QR-code scanner", Toast.LENGTH_LONG).show();
+
+            Uri marketUri = Uri.parse("market://details?id=com.google.zxing.client.android");
+            Intent marketIntent = new Intent(Intent.ACTION_VIEW, marketUri);
+            startActivity(marketIntent);
+        } catch(Exception e) {
+            Log.e(TAG, "scanQrCode() exception", e);
+        }
     }
 
     public void prev(WizardPageFragment fragment, Bundle bundle) {
@@ -310,6 +359,21 @@ public class ConnectionWizardActivity extends AppCompatActivity {
         @Override
         protected int getLayoutResourceID() {
             return R.layout.connection_wizard_provider_selection_fragment;
+        }
+
+        @Override
+        protected void initButtons(View v) {
+            super.initButtons(v);
+
+            Button scanCodeButton = (Button)v.findViewById(R.id.scanQrCodeButton);
+            if(scanCodeButton != null) {
+                scanCodeButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        activity.scanQrCode();
+                    }
+                });
+            }
         }
 
         @Override
