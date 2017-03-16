@@ -21,6 +21,9 @@ android {
 
     lintOptions {
         lintConfig file("lint.xml")
+
+        // https://code.google.com/p/android/issues/detail?id=231324
+        warning 'GradleCompatible'
     }
 
     buildTypes {
